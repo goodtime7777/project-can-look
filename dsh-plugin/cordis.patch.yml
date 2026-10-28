@@ -1,0 +1,19 @@
+# dsh-projectmap —— bundle 补丁
+#
+# 这个文件把插件挂进 DSH 的组合树。安装方式（路径换成你自己的）：
+#   dsh plugin --profile web add link:<本仓库路径>/dsh-plugin
+# 装完必须重启 dsh（profile 的 bundles 层在进程内缓存）。
+#
+# name 必须等于 package.json 的包名。
+#
+# config.root：要扫哪个目录（每个子目录里的 .projectmap/map.json）。
+# 留空就用 dsh web 启动时的工作目录。想固定成某个目录，在你自己 profile 的
+# cordis.patch.yml 里覆盖这一行，别改这里：
+#   - id: dsh-projectmap
+#     config:
+#       root: /path/to/your/projects
+- insert:
+    - id: dsh-projectmap
+      name: dsh-projectmap
+      config:
+        root: ''

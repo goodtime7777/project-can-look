@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>项目地图</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d1117'/%3E%3Crect x='13' y='5' width='6' height='6' rx='2' fill='%23a78bfa'/%3E%3Crect x='4' y='21' width='6' height='6' rx='2' fill='%2338bdf8'/%3E%3Crect x='22' y='21' width='6' height='6' rx='2' fill='%2322c55e'/%3E%3Cpath d='M16 11v5M16 16H7v5M16 16h9v5' stroke='%232b3746' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="rail-head">
+      <div class="brand">项目地图</div>
+      <div class="brand-sub" id="railSub">加载中…</div>
+    </div>
+    <div class="rail-list" id="railList"></div>
+    <div class="rail-foot">
+      <span class="hint">滚轮缩放 · 空白拖拽平移 · 双击空白新建 · 拖框右侧圆点连线</span>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <header class="topbar">
+      <div class="tb-left">
+        <h1 id="wsTitle">—</h1>
+        <div class="tb-meta" id="wsMeta"></div>
+      </div>
+      <div class="tb-right">
+        <select id="wsSelect" class="ws-select" title="切换工作区"></select>
+        <div class="save-pill" id="savePill" data-state="saved">已保存</div>
+        <div class="chips" id="chips">
+          <button class="chip active" data-filter="all">全部</button>
+          <button class="chip" data-filter="doing">进行中</button>
+          <button class="chip" data-filter="blocked">卡住</button>
+          <button class="chip" data-filter="done">完成</button>
+        </div>
+        <input id="search" class="search" type="search" placeholder="搜框…" autocomplete="off">
+        <button id="relayout" class="btn" title="忘掉手拖的位置，按树重排">重排</button>
+        <button id="fit" class="btn" title="缩到能看全貌">全览</button>
+      </div>
+    </header>
+
+    <div class="canvas" id="canvas">
+      <div class="grid" id="grid"></div>
+      <div class="world" id="world">
+        <svg id="svg" class="edges" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="nodes" id="nodes"></div>
+      </div>
+
+      <div class="edge-menu" id="edgeMenu" hidden>
+        <div class="em-title" id="emTitle">连过去要干什么？</div>
+        <div class="em-body" id="emBody"></div>
+      </div>
+
+      <div class="empty" id="empty" hidden>
+        <div class="empty-title">还没画过地图</div>
+        <div class="empty-body">这个工作区里没有 <code>.projectmap/map.json</code>。左边列的是已经有的。</div>
+      </div>
+
+      <div class="legend" id="legend">
+        <span><i class="sw" style="--c:#8b93a1"></i>想法</span>
+        <span><i class="sw" style="--c:#3b82f6"></i>进行中</span>
+        <span><i class="sw" style="--c:#ef4444"></i>卡住</span>
+        <span><i class="sw" style="--c:#22c55e"></i>完成</span>
+        <span><i class="sw" style="--c:#4b5563"></i>放弃</span>
+      </div>
+      <div class="zoomtag" id="zoomtag">100%</div>
+    </div>
+
+    <aside class="detail" id="detail" hidden>
+      <button class="detail-close" id="detailClose" title="关闭">×</button>
+      <div class="d-kind" id="dKind"></div>
+      <input class="d-title-input" id="dTitle" placeholder="这个框叫什么">
+      <div class="d-statuses" id="dStatuses"></div>
+      <div class="d-kinds" id="dKinds"></div>
+
+      <div class="d-field">
+        <label>挂在哪</label>
+        <select id="dParent"></select>
+      </div>
+
+      <textarea class="d-note-input" id="dNote" rows="3" placeholder="一句话说明：做完什么、卡在哪"></textarea>
+
+      <div class="d-sec">
+        <div class="d-sec-title">关联</div>
+        <div id="dRefs" class="d-refs"></div>
+        <div class="d-ref-add">
+          <input id="dRefInput" placeholder="路径或链接，回车添加">
+        </div>
+      </div>
+
+      <div class="d-sec" id="dChildSec" hidden>
+        <div class="d-sec-title">下一层</div>
+        <div id="dChild" class="d-refs"></div>
+      </div>
+
+      <div class="d-sec" id="dEdgesSec" hidden>
+        <div class="d-sec-title">线</div>
+        <div id="dEdges" class="d-refs"></div>
+      </div>
+
+      <div class="d-actions">
+        <button class="btn small" id="dAddChild">＋ 在这框下加一个</button>
+        <button class="btn small danger" id="dDelete">删除</button>
+      </div>
+      <div class="d-id" id="dId"></div>
+    </aside>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

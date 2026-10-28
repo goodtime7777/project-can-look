@@ -1,0 +1,8 @@
+# 统一换行：仓库里存 LF，Windows 的批处理脚本检出时强制 CRLF
+* text=auto
+
+*.bat text eol=crlf
+*.vbs text eol=crlf
+
+*.png binary
+*.ico binary

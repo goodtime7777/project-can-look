@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "workspace": "example",
+  "title": "示例：做一个网站",
+  "settings": { "mergePolicy": "ask" },
+  "nodes": [
+    {
+      "id": "n1",
+      "parent": null,
+      "title": "做一个网站",
+      "kind": "idea",
+      "status": "doing",
+      "note": "把想法做成能用的东西",
+      "refs": []
+    },
+    {
+      "id": "n2",
+      "parent": "n1",
+      "title": "定技术栈",
+      "kind": "idea",
+      "status": "done",
+      "note": "静态站还是带后端，先定死别反复",
+      "refs": []
+    },
+    {
+      "id": "n3",
+      "parent": "n1",
+      "title": "搭架子",
+      "kind": "frame",
+      "status": "done",
+      "note": "路由、目录、构建脚本",
+      "refs": [{ "type": "file", "value": "/path/to/project", "label": "项目目录" }]
+    },
+    {
+      "id": "n4",
+      "parent": "n3",
+      "title": "数据层",
+      "kind": "frame",
+      "status": "doing",
+      "note": "先能用假数据跑通，再换真的",
+      "refs": []
+    },
+    {
+      "id": "n5",
+      "parent": "n3",
+      "title": "界面层",
+      "kind": "ui",
+      "status": "blocked",
+      "note": "等视觉稿；我不太会配色",
+      "refs": []
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n4",
+      "to": "n5",
+      "type": "merge",
+      "status": "pending",
+      "policy": "plan",
+      "recipe": {
+        "take": { "n4": ["数据结构", "交互逻辑"], "n5": ["视觉风格"] },
+        "product": "合体版页面",
+        "words": "数据层那套逻辑 + 界面层的皮"
+      }
+    },
+    {
+      "id": "e2",
+      "from": "n2",
+      "to": "n3",
+      "type": "dep",
+      "status": "done",
+      "recipe": null
+    }
+  ]
+}

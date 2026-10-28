@@ -1,0 +1,2 @@
+@echo off
+powershell -NoProfile -Command "$c = Get-NetTCPConnection -LocalPort 8377 -State Listen -ErrorAction SilentlyContinue; if ($c) { $c | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; 'stopped' } else { 'not running' }"

@@ -1,0 +1,20 @@
+# 本地数据：地图是你自己的项目发育史，不进仓库
+.projectmap/
+
+# 运行产物
+server.log
+*.log
+*.bak
+*.tmp
+
+# 本机专用的启动脚本
+restart-panel.bat
+push.bat
+
+# 编辑器 / 系统
+node_modules/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.playwright-mcp/

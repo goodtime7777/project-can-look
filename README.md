@@ -121,31 +121,40 @@ stop.bat                 # 停掉占 8377 的进程
 
 ## 塞进 DeepSeek Harness（可选）
 
-有两种挂法，二选一。
+两种用法，二选一。
 
-### A. 当 DSH 插件装上（同源，推荐）
+### A. 一行装成 DSH 插件（同源，推荐）
 
-`dsh-plugin/` 是一个 host 侧插件：不用客户端 bundle，靠 `ctx.webServer.register` 把页面和
-API 挂到 DSH 自己的 web 服务上。装完就没有独立端口、没有额外进程、没有 CORS。
+这个仓库本身就是一个 DSH 插件包（host 侧，不用客户端 bundle）。装它：
 
 ```bash
-dsh plugin --profile web add link:<本仓库路径>/dsh-plugin
+dsh plugin --profile web add github:goodtime7777/project-can-look
 # 然后重启 dsh
 ```
 
-装好后地址是 `http://localhost:3080/projectmap/`（端口跟你的 DSH 一致）。扫描根目录在
-`dsh-plugin/cordis.patch.yml` 的 `config.root` 里改。
+装完 DSH 自己的 web 服务上就多了 `/projectmap/`：没有独立端口、没有额外进程、没有 CORS。
+页面右侧还会出现一颗浮动按钮，点一下在侧边栏打开地图。
+
+- 地址：`http://localhost:<你的端口>/projectmap/`
+- 扫描根目录：默认用 `dsh web` 的工作目录；想固定就在自己 profile 的 `cordis.patch.yml` 里覆盖：
+
+  ```yaml
+  - id: dsh-projectmap
+    config:
+      root: /path/to/your/projects
+  ```
+
+- 卸掉：`dsh plugin --profile web remove dsh-projectmap`，然后重启
 
 > **为什么是 localhost 不是 127.0.0.1**：DSH 右侧边栏的浏览器标签有一个保护 ——
 > 目标 origin 与应用自身相同时拒绝嵌入（`error.application-origin`）。用 `localhost`
-> 换个 origin 字符串就绕过了，服务还是同一个。
-
-卸掉：`dsh plugin --profile web remove dsh-projectmap` 然后重启。
+> 换个 origin 字符串就绕过了，服务还是同一个。<br>
+> 那颗浮动按钮会自动判断该用哪个主机名，不用你管。
 
 ### B. 独立服务 + 侧边栏浏览器
 
-DSH 的右侧边栏带一个能加载 `127.0.0.1` 页面的浏览器标签，Web 版默认关着。在
-`~/.dsh/profiles/web/cordis.patch.yml` 末尾加：
+不装插件也行。DSH 的右侧边栏带一个能加载 `127.0.0.1` 页面的浏览器标签，Web 版默认关着。
+在 `~/.dsh/profiles/web/cordis.patch.yml` 末尾加：
 
 ```yaml
 - id: ui-sidebar-browser
@@ -155,19 +164,25 @@ DSH 的右侧边栏带一个能加载 `127.0.0.1` 页面的浏览器标签，Web
 重启 `dsh web`，然后在聊天里点 `http://127.0.0.1:8377` 这个链接 —— 默认设置下它会在
 右侧边栏打开，并且这个标签会按会话记住，刷新自动恢复。
 
-窄到 700px 以下时页面会自动切窄屏：左侧工作区列表收成顶栏下拉、详情面板铺满宽度。
+窄到 700px 以下时页面会自动切窄屏：左侧工作区列表收成顶栏下拉、详情面板变成底部抽屉。
 
 ![窄屏](docs/narrow.png)
 
 ## 目录
 
+这个仓库同时是「能单独跑的小工具」和「一个 DSH 插件包」—— 两者共用同一份前端。
+
 ```
-server.mjs            零依赖 HTTP 服务（静态页 + 读写 map.json）
+package.json          DSH 插件包声明（dsh.bundle.patch / dsh.client）
+cordis.patch.yml      插件挂载补丁
+lib/index.js          host 侧：注册 /projectmap 路由 + 注入浮动按钮
+lib/client.js         客户端侧：把 sidebarRight.openTab 包成一个函数
 web/                  前端：index.html / app.js / app.css，无构建、无第三方库
-dsh-plugin/           DSH host 插件（同一份 web/，挂在 /projectmap 下）
+server.mjs            独立服务（静态页 + 读写 map.json），不依赖 DSH
 examples/             示例 map.json
 skills/projectmap/    给 agent 的读写规则
 docs/                 截图
+test-routes.mjs       插件路由的自测（node test-routes.mjs）
 start.bat / stop.bat  Windows 启停
 serve.vbs             Windows 无窗口启动器
 ```

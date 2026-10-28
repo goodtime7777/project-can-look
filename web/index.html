@@ -104,6 +104,16 @@
         <button class="btn small" id="dAddChild">＋ 在这框下加一个</button>
         <button class="btn small danger" id="dDelete">删除</button>
       </div>
+
+      <!-- 确认走面板里的一块，不用 window.confirm：沙箱 iframe 里 confirm 会被拦掉 -->
+      <div class="d-confirm" id="dConfirm" hidden>
+        <div class="d-confirm-text" id="dConfirmText"></div>
+        <div class="d-confirm-actions">
+          <button class="btn small" id="dConfirmCancel">取消</button>
+          <button class="btn small solid-danger" id="dConfirmYes">确认删除</button>
+        </div>
+      </div>
+
       <div class="d-id" id="dId"></div>
     </aside>
   </main>

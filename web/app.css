@@ -386,6 +386,20 @@ html, body {
 
 .d-actions { display: flex; gap: 6px; margin-top: 14px; }
 .d-actions .btn { flex: 1; }
+
+.d-confirm {
+  margin-top: 10px; padding: 10px;
+  border: 1px solid #5a2b2b; border-radius: 8px;
+  background: #241416;
+}
+.d-confirm[hidden] { display: none; }
+.d-confirm-text { font-size: 12px; color: #f0a5a5; line-height: 1.6; margin-bottom: 9px; }
+.d-confirm-actions { display: flex; gap: 6px; }
+.d-confirm-actions .btn { flex: 1; }
+.btn.solid-danger {
+  background: #7f2a2a; border-color: #a13a3a; color: #ffe2e2;
+}
+.btn.solid-danger:hover { background: #963333; border-color: #c04a4a; color: #fff; }
 .d-id { margin-top: 12px; font-size: 10px; color: #414c5a; }
 
 .erow { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8fa7c0; }

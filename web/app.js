@@ -776,6 +776,7 @@ function selectNode(id) {
 function closeDetail() {
   S.sel = null;
   $('detail').hidden = true;
+  hideDeleteConfirm();
   for (const el of nodesLayer.children) el.classList.remove('sel');
 }
 
@@ -783,6 +784,7 @@ function fillDetail(id) {
   const n = byId(id);
   if (!n) { closeDetail(); return; }
   const seq = ++detailSeq;
+  hideDeleteConfirm();
   $('detail').hidden = false;
 
   const st = statusOf(n), kd = kindOf(n);
@@ -961,14 +963,27 @@ $('dAddChild').addEventListener('click', () => {
   $('dTitle').select();
 });
 
+function hideDeleteConfirm() {
+  $('dConfirm').hidden = true;
+}
+
 $('dDelete').addEventListener('click', () => {
   const n = byId(S.sel);
   if (!n) return;
   const kids = kidsOf(n.id).length;
-  const msg = kids
-    ? `删掉「${n.title}」？它下面 ${kids} 个框会挂到上一层。`
-    : `删掉「${n.title}」？`;
-  if (!confirm(msg)) return;
+  $('dConfirmText').textContent = kids
+    ? `删掉「${n.title || '未命名'}」？它下面 ${kids} 个框会挂到上一层。`
+    : `删掉「${n.title || '未命名'}」？`;
+  $('dConfirm').hidden = false;
+  $('dConfirmYes').focus();
+});
+
+$('dConfirmCancel').addEventListener('click', hideDeleteConfirm);
+
+$('dConfirmYes').addEventListener('click', () => {
+  const n = byId(S.sel);
+  hideDeleteConfirm();
+  if (!n) return;
   removeNode(n.id);
   closeDetail();
   render();

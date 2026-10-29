@@ -77,24 +77,28 @@ stop.bat                 # 停掉占 8377 的进程
 }
 ```
 
+刷新页面，左边就会出现这个项目。完整的结构可以照抄 [`examples/map.example.json`](examples/map.example.json)。
+
 ### 自动记流水（装成插件后）
 
 插件会监听会话事件，**每个回合结束写一行**到 `<项目>/.projectmap/activity.ndjson`：
 
 ```json
-{"v":1,"at":"…","sid":"abc","turn":7,"ask":"把拖拽的判定改一下",
+{"id":"act_lx9k2a","v":1,"at":"…","sid":"abc","turn":7,
+ "ask":"把拖拽的判定改一下",
  "files":["D:/x/web/app.js","D:/x/web/app.css"],"cmds":["git commit -m \"fix\""]}
 ```
 
-它只记事实，不写 `map.json`。两条刹车：
+它只记事实，不写 `map.json`。三条刹车：
 
 - 没有 `.projectmap/map.json` 的项目**完全不碰**（轻量项目零开销）
 - `map.json` 里 `"settings": { "enabled": false }` 也完全不碰
+- `ask` 会剥掉 harness 注入的运行时上下文，只留你真正说的那句
 
 文件超过 1MB 会轮转成 `activity.1.ndjson`。
 
-
-刷新页面，左边就会出现这个项目。完整的结构可以照抄 [`examples/map.example.json`](examples/map.example.json)。
+每条流水有 `id`；节点用 `from: ["act_lx9k2a"]` 认领它。**没被任何节点认领的，就是"还没入图"**——
+顶栏那个琥珀色的「落后 N 条」就是这么算出来的。
 
 ## 怎么用
 
@@ -102,6 +106,9 @@ stop.bat                 # 停掉占 8377 的进程
 
 | 想干的事 | 怎么操作 |
 |---|---|
+| **看主线** | 顶栏默认「主线」：从上往下一列，带序号；支线折成「＋N 支线」 |
+| **看全貌** | 切「全部」：完整树，含所有支线和关系线 |
+| **展开支线** | 点主线框上的「＋N 支线」角标 |
 | 新建框 | 空白处双击（先选中一个框就建在它下面） |
 | 连线 | 鼠标悬停在框上，右边缘冒出一个圆点，拖到另一个框松手 |
 | 选线的语义 | 松手后弹菜单：合成 / 参考 / 依赖 / 次序 |
@@ -116,6 +123,14 @@ stop.bat                 # 停掉占 8377 的进程
 
 每个项目一个文件：`<项目目录>/.projectmap/map.json`。跟着项目走，能进 git，坏了能手改。
 
+**整份**
+
+| 字段 | 说明 |
+|---|---|
+| `mainline` | **主线**：一串有序的节点 id。默认视图只画它 |
+| `settings.enabled` | `false` 时整张图停用（连流水都不记） |
+| `settings.mergePolicy` | 线的默认处理方式，见下表 `policy` |
+
 **节点**
 
 | 字段 | 说明 |
@@ -126,6 +141,9 @@ stop.bat                 # 停掉占 8377 的进程
 | `kind` | `idea` 思路 / `frame` 框架 / `content` 内容 / `ui` 界面 / `fix` 修复 / `other` |
 | `status` | `idea` / `doing` / `blocked` / `done` / `dropped` |
 | `note` | 做完什么、卡在哪 |
+| `why` | **为什么这么做、否掉了什么**。上下文被压缩后，这是唯一还能解释它的东西 |
+| `from` | 由哪几条流水（`activity.ndjson` 的 `id`）合成。用于反查和"落后"计数 |
+| `pivot` | 改道点：在这一步推翻了之前的做法 |
 | `refs` | `[{type, value, label}]`，`type` 是 `file` / `url` / `session` |
 
 **线**
@@ -140,9 +158,16 @@ stop.bat                 # 停掉占 8377 的进程
 
 ## 给 agent 用
 
-仓库里的 [`skills/projectmap/SKILL.md`](skills/projectmap/SKILL.md) 是一份给 coding agent 的规则：
-开工前读图、收尾补节点、处理 `pending` 的线。在 Claude Code / DeepSeek Harness 这类
-支持 skill 的环境里，把它放进 skills 目录即可（路径按你的环境改）。
+仓库里的 [`skills/projectmap/SKILL.md`](skills/projectmap/SKILL.md) 是给 coding agent 的读写规则，v2 起它管的是四件事：
+
+1. **开工三步**：看有没有图 → 读图（主线走到哪、有没有 `blocked`/`pending`）→ 读流水尾巴算"落后几条"
+2. **会话归位**：新会话静默判断接在哪，先建一个临时框写明假设，一轮后合并（不打断你）
+3. **每轮入图**：改了文件→实现框；只讨论→思路框；两者都有→两个框加一条 `ref`；闲聊→不入图
+4. **主线**：每轮主张"这算主线推进"，追加进 `mainline`；改道标 `pivot` + `why`
+
+> 光有 skill 不够——skill 要 agent 主动加载。所以真实部署里再加一条全局
+> `~/.dsh/AGENTS.md`：**工作区有 `.projectmap/map.json` 就按上面办，入不了图要说明原因**。
+> 这一层每次会话自动进上下文，不依赖"想起来"。
 
 ## 塞进 DeepSeek Harness（可选）
 
@@ -196,27 +221,29 @@ dsh plugin --profile web add github:goodtime7777/project-can-look
 package.json          DSH 插件包声明（dsh.bundle.patch / dsh.client）
 cordis.patch.yml      插件挂载补丁
 lib/index.js          host 侧：注册 /projectmap 路由 + 注入浮动按钮
+lib/activity.js       host 侧：监听会话事件，每回合写一行 activity.ndjson
+lib/store.js          读 map.json / activity.ndjson，算"落后多少条"
+lib/auth.js           进程令牌：注入页面 + 校验 /api/*
 lib/client.js         客户端侧：把 sidebarRight.openTab 包成一个函数
 web/                  前端：index.html / app.js / app.css，无构建、无第三方库
 server.mjs            独立服务（静态页 + 读写 map.json），不依赖 DSH
 examples/             示例 map.json
 skills/projectmap/    给 agent 的读写规则
 docs/                 截图
-test-routes.mjs       插件路由的自测（node test-routes.mjs）
+test-routes.mjs       路由 + 鉴权自测（node test-routes.mjs）
+test-activity.mjs     流水记录自测（node test-activity.mjs）
 start.bat / stop.bat  Windows 启停
 serve.vbs             Windows 无窗口启动器
 ```
 
 ## 已知限制
 
-- 画布是固定布局 + 拖拽，不是自动布局引擎；节点多了要靠缩放和搜索
+- 画布是固定布局 + 拖拽，不是自动布局引擎；节点多了要靠缩放、搜索和主线视图
+- **主线要靠 agent 每轮主张**。它判断错了，主线会跟着歪——缓解是改道留痕，但治不了"一直没意识到自己错了"
 - 只做了单用户单机，没有协作、没有历史版本、没有 undo
 - Windows 的启停脚本是 `.bat`/`.vbs`；其他平台直接 `node server.mjs`
 - 边只有四种语义，够用但不再扩展（加语义会让"线是什么"变模糊）
-
-## License
-
-MIT
+- **冷启动只做到"生成草案"**：能按目录、文档、提交记录倒推第一版地图，但还没有一键导入到面板里
 
 ## 安全
 
@@ -227,3 +254,7 @@ MIT
 - 不发任何 CORS 头，跨源页面连 HTML 都取不到，也就偷不到令牌
 
 实测：另起一个 `127.0.0.1:8899` 的页面去 POST 写、GET 读、抓 HTML，三种都被拦死。
+
+## License
+
+MIT

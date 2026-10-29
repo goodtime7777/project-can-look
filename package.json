@@ -1,6 +1,6 @@
 {
     "name":  "dsh-projectmap",
-    "version":  "0.3.0",
+    "version": "0.4.0",
     "description":  "椤圭洰鍦板浘锛氭妸椤圭洰鐨勫彂鑲插彶鐢绘垚鍙互鎷栥€佸彲浠ユ敼鐨勬爲銆傛棦鑳藉崟鐙窇锛坣ode server.mjs锛夛紝涔熻兘瑁呮垚 DeepSeek Harness 鎻掍欢",
     "type":  "module",
     "main":  "lib/index.js",

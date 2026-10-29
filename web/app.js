@@ -64,6 +64,18 @@ const nodesLayer = $('nodes');
 const railList = $('railList');
 const edgeMenu = $('edgeMenu');
 
+/* ---------------- 鉴权 ----------------
+ * 页面由服务端注入一个进程级令牌（<meta name="pm-token">），
+ * 所有 /api/* 请求必须带着它。跨源页面拿不到这份 HTML，也就拿不到令牌。
+ */
+const PM_TOKEN = document.querySelector('meta[name="pm-token"]')?.content || '';
+
+function apiFetch(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers);
+  if (PM_TOKEN) headers['x-pm-token'] = PM_TOKEN;
+  return fetch(path, { ...opts, headers });
+}
+
 /* ---------------- 小工具 ---------------- */
 
 function svgEl(tag, attrs = {}) {
@@ -692,7 +704,7 @@ async function saveNow() {
   S.saving = true;
   setSavePill('saving');
   try {
-    const r = await fetch('api/map/' + encodeURIComponent(S.ws), {
+    const r = await apiFetch('api/map/' + encodeURIComponent(S.ws), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(S.map),
@@ -1048,7 +1060,7 @@ function renderRail() {
 async function loadWorkspace(ws) {
   if (S.dirty) await saveNow();
   try {
-    const map = await fetch('api/map/' + encodeURIComponent(ws)).then((r) => r.json());
+    const map = await apiFetch('api/map/' + encodeURIComponent(ws)).then((r) => r.json());
     S.ws = ws;
     S.map = map;
     if (!S.map.edges) S.map.edges = [];
@@ -1076,7 +1088,7 @@ async function refreshPending() {
     return;
   }
   try {
-    const d = await fetch('api/pending/' + encodeURIComponent(S.ws)).then((r) => r.json());
+    const d = await apiFetch('api/pending/' + encodeURIComponent(S.ws)).then((r) => r.json());
     if (d.pending > 0) {
       el.hidden = false;
       el.textContent = `落后 ${d.pending} 条`;
@@ -1092,7 +1104,7 @@ async function refreshPending() {
 
 async function boot() {
   try {
-    const data = await fetch('api/workspaces').then((r) => r.json());
+    const data = await apiFetch('api/workspaces').then((r) => r.json());
     S.index = data.workspaces || [];
     renderRail();
     if (S.index.length) await loadWorkspace(S.index[0].ws);

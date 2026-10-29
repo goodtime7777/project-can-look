@@ -9,6 +9,7 @@ import { join, extname, resolve, sep, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { pendingStats } from './lib/store.js';
+import { authorized, injectToken } from './lib/auth.js';
 
 // 用脚本自己的位置定位 web/ 和默认根目录，不依赖启动时的工作目录
 // （从 WMI / 计划任务 / 启动项拉起时 cwd 不是项目目录）
@@ -69,22 +70,14 @@ async function listWorkspaces() {
   return out;
 }
 
-// 允许被 iframe 里加载（DSH 右侧边栏的浏览器标签是 sandbox iframe，
-// 它的 origin 是 "null"，没有这个头 fetch 会被 CORS 拦掉）。
-// 只监听 127.0.0.1，不做凭证，用 * 是安全的。
-const CORS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
-  'access-control-allow-headers': 'content-type',
-  'access-control-max-age': '600',
-};
-
+// 以前这里开过 access-control-allow-origin: *（为了沙箱 iframe），
+// 那等于把写接口对本机任何页面敞开——实测另起一个 8899 的页面就能 POST 清空地图。
+// 现在改成：不开 CORS，所有 /api/* 必须带进程令牌（见 lib/auth.js）。
 function json(res, code, body) {
   const text = JSON.stringify(body);
   res.writeHead(code, {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
-    ...CORS,
   });
   res.end(text);
 }
@@ -145,11 +138,12 @@ async function serveStatic(res, pathname) {
     return;
   }
   try {
-    const buf = await readFile(file);
+    let buf = await readFile(file);
+    // 页面里注进本次进程的令牌，前端带着它调 /api/*
+    if (file.endsWith('.html')) buf = injectToken(buf.toString('utf8'));
     res.writeHead(200, {
       'content-type': MIME[extname(file).toLowerCase()] || 'application/octet-stream',
       'cache-control': 'no-store',
-      ...CORS,
     });
     res.end(buf);
   } catch {
@@ -161,13 +155,18 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', 'http://localhost');
   const p = url.pathname;
 
+  // 跨源预检一律不答应：没有 ACAO，外面的页面就过不来
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, CORS);
-    res.end();
+    res.writeHead(403).end();
     return;
   }
 
   try {
+    // 所有 API 都要令牌：没有就跑不了读也跑不了写
+    if (p.startsWith('/api/') && !authorized(req)) {
+      return json(res, 403, { error: 'missing or bad x-pm-token' });
+    }
+
     if (p === '/api/workspaces') {
       return json(res, 200, { workspaces: await listWorkspaces() });
     }

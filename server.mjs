@@ -8,6 +8,8 @@ import { readFile, readdir, stat, writeFile, rename, copyFile, mkdir } from 'nod
 import { join, extname, resolve, sep, normalize, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { pendingStats } from './lib/store.js';
+
 // 用脚本自己的位置定位 web/ 和默认根目录，不依赖启动时的工作目录
 // （从 WMI / 计划任务 / 启动项拉起时 cwd 不是项目目录）
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -168,6 +170,13 @@ const server = createServer(async (req, res) => {
   try {
     if (p === '/api/workspaces') {
       return json(res, 200, { workspaces: await listWorkspaces() });
+    }
+
+    // 落后多少条：流水里还没被节点 from 认领的条数
+    if (p.startsWith('/api/pending/')) {
+      const ws = decodeURIComponent(p.slice('/api/pending/'.length));
+      if (!WS_RE.test(ws)) return json(res, 400, { error: 'bad workspace name' });
+      return json(res, 200, await pendingStats(join(ROOT, ws)));
     }
 
     if (p.startsWith('/api/map/')) {

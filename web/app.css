@@ -98,6 +98,12 @@ html, body {
 .tb-meta { margin-top: 2px; font-size: 11px; color: var(--text-faint); }
 .tb-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
+.pending-pill {
+  font-size: 11px; padding: 3px 8px; border-radius: 6px; cursor: default;
+  border: 1px solid #4a3a20; color: #d1a24a; background: rgba(209,162,74,.08);
+}
+.pending-pill[hidden] { display: none; }
+
 .save-pill {
   font-size: 11px; padding: 3px 8px; border-radius: 6px;
   border: 1px solid var(--line); color: var(--text-faint);

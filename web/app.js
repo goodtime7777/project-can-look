@@ -701,6 +701,7 @@ async function saveNow() {
     S.dirty = false;
     setSavePill('saved');
     syncRailCounts();
+    refreshPending();
   } catch (err) {
     console.error(err);
     setSavePill('error');
@@ -1061,8 +1062,31 @@ async function loadWorkspace(ws) {
     renderRail();
     render();
     focusReadable();
+    refreshPending();
   } catch (err) {
     console.error(err);
+  }
+}
+
+/** 顶栏那个「落后 N 条」：流水里还没被任何节点的 from 认领的条数 */
+async function refreshPending() {
+  const el = $('pendingPill');
+  if (!S.ws) {
+    el.hidden = true;
+    return;
+  }
+  try {
+    const d = await fetch('api/pending/' + encodeURIComponent(S.ws)).then((r) => r.json());
+    if (d.pending > 0) {
+      el.hidden = false;
+      el.textContent = `落后 ${d.pending} 条`;
+      const when = d.lastActivityAt ? new Date(d.lastActivityAt).toLocaleString('zh-CN') : '—';
+      el.title = `流水 ${d.total} 条，已入图 ${d.total - d.pending} 条\n最近一条：${when}`;
+    } else {
+      el.hidden = true;
+    }
+  } catch {
+    el.hidden = true;
   }
 }
 

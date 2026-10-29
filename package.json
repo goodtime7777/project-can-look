@@ -1,39 +1,45 @@
 {
-  "name": "dsh-projectmap",
-  "version": "0.2.0",
-  "description": "项目地图：把项目的发育史画成可以拖、可以改的树。既能单独跑（node server.mjs），也能装成 DeepSeek Harness 插件",
-  "type": "module",
-  "main": "lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
-    "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "lib",
-    "web",
-    "cordis.patch.yml"
-  ],
-  "dsh": {
-    "bundle": {
-      "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-sidebar-right"
-      ]
-    }
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/goodtime7777/project-can-look.git"
-  },
-  "homepage": "https://github.com/goodtime7777/project-can-look#readme",
-  "bugs": {
-    "url": "https://github.com/goodtime7777/project-can-look/issues"
-  },
-  "keywords": ["dsh", "dsh-plugin", "deepseek-harness", "projectmap", "mindmap"],
-  "license": "MIT"
+    "name":  "dsh-projectmap",
+    "version":  "0.3.0",
+    "description":  "椤圭洰鍦板浘锛氭妸椤圭洰鐨勫彂鑲插彶鐢绘垚鍙互鎷栥€佸彲浠ユ敼鐨勬爲銆傛棦鑳藉崟鐙窇锛坣ode server.mjs锛夛紝涔熻兘瑁呮垚 DeepSeek Harness 鎻掍欢",
+    "type":  "module",
+    "main":  "lib/index.js",
+    "exports":  {
+                    ".":  "./lib/index.js",
+                    "./client":  "./lib/client.js",
+                    "./cordis.patch.yml":  "./cordis.patch.yml",
+                    "./package.json":  "./package.json"
+                },
+    "files":  [
+                  "lib",
+                  "web",
+                  "cordis.patch.yml"
+              ],
+    "dsh":  {
+                "bundle":  {
+                               "patch":  "./cordis.patch.yml"
+                           },
+                "client":  {
+                               "platform":  "web",
+                               "inject":  [
+                                              "@deepseek-ai/dsh-client-ui-sidebar-right"
+                                          ]
+                           }
+            },
+    "repository":  {
+                       "type":  "git",
+                       "url":  "git+https://github.com/goodtime7777/project-can-look.git"
+                   },
+    "homepage":  "https://github.com/goodtime7777/project-can-look#readme",
+    "bugs":  {
+                 "url":  "https://github.com/goodtime7777/project-can-look/issues"
+             },
+    "keywords":  [
+                     "dsh",
+                     "dsh-plugin",
+                     "deepseek-harness",
+                     "projectmap",
+                     "mindmap"
+                 ],
+    "license":  "MIT"
 }

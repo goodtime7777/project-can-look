@@ -18,6 +18,7 @@ const A = await makeWs('with-map', { schema: 1, title: 'A', nodes: [], edges: []
 const B = await makeWs('no-map', null);
 const C = await makeWs('disabled', { schema: 1, title: 'C', nodes: [], edges: [], settings: { enabled: false } });
 const D = await makeWs('silent-turn', { schema: 1, title: 'D', nodes: [], edges: [] });
+const E = await makeWs('dirty-ask', { schema: 1, title: 'E', nodes: [], edges: [] });
 
 let handler = null;
 const ctx = {
@@ -64,8 +65,21 @@ emit('sA', A, 'tool/call', { turn: 9, name: 'write', arguments: JSON.stringify({
 emit('sA', A, 'turn/end', { turn: 9, reason: 'complete' });
 await tick();
 
+// 被 harness 上下文污染的用户消息：只记他真正说的那句
+emit('sE', E, 'user/message', {
+  content: [
+    {
+      type: 'text',
+      text: 'Time sampled while preparing turn 1, step 1: 2026-10-29T22:13:49+08:00[Asia/Shanghai]\nBrowser time zone for this request: Asia/Shanghai.\n\nOK，我们在这个对话用于测试项目地图',
+    },
+  ],
+});
+emit('sE', E, 'tool/call', { turn: 1, name: 'write', arguments: JSON.stringify({ path: 'D:/e/a.js' }) });
+emit('sE', E, 'turn/end', { turn: 1, reason: 'complete' });
+await tick();
+
 const out = {};
-for (const [label, dir] of [['A', A], ['B', B], ['C', C], ['D', D]]) {
+for (const [label, dir] of [['A', A], ['B', B], ['C', C], ['D', D], ['E', E]]) {
   try {
     out[label] = (await readFile(join(dir, '.projectmap', 'activity.ndjson'), 'utf8')).trim().split('\n').filter(Boolean);
   } catch {
@@ -80,7 +94,7 @@ const a = out.A.map((l) => JSON.parse(l));
 const c = out.C.length;
 const b = out.B.length;
 const d = out.D.length;
-const bad = out.A.length === 2 ? JSON.parse(out.A[1]) : null;
+const e = out.E.length ? JSON.parse(out.E[0]) : null;
 
 const checks = [
   ['A 记了两行（正常轮 + 坏参数之后那轮）', a.length === 2],
@@ -94,6 +108,8 @@ const checks = [
   ['B 没有地图 → 零写入', b === 0],
   ['C enabled=false → 零写入', c === 0],
   ['D 空回合 → 零写入', d === 0],
+  ['E 脏 ask 被清洗成用户原话', e?.ask === 'OK，我们在这个对话用于测试项目地图'],
+  ['E 清洗后不再包含 harness 前缀', !/Time sampled/.test(e?.ask || '')],
 ];
 
 let ok = true;

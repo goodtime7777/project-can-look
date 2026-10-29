@@ -18,3 +18,9 @@ Thumbs.db
 .vscode/
 .idea/
 .playwright-mcp/
+
+# 本地临时截图
+shot-*.png
+
+# 别人的评审文档（本地参考，不发布）
+*评审*.md

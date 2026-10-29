@@ -69,6 +69,23 @@ stop.bat                 # 停掉占 8377 的进程
 }
 ```
 
+### 自动记流水（装成插件后）
+
+插件会监听会话事件，**每个回合结束写一行**到 `<项目>/.projectmap/activity.ndjson`：
+
+```json
+{"v":1,"at":"…","sid":"abc","turn":7,"ask":"把拖拽的判定改一下",
+ "files":["D:/x/web/app.js","D:/x/web/app.css"],"cmds":["git commit -m \"fix\""]}
+```
+
+它只记事实，不写 `map.json`。两条刹车：
+
+- 没有 `.projectmap/map.json` 的项目**完全不碰**（轻量项目零开销）
+- `map.json` 里 `"settings": { "enabled": false }` 也完全不碰
+
+文件超过 1MB 会轮转成 `activity.1.ndjson`。
+
+
 刷新页面，左边就会出现这个项目。完整的结构可以照抄 [`examples/map.example.json`](examples/map.example.json)。
 
 ## 怎么用

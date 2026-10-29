@@ -54,6 +54,7 @@ const S = {
   saving: false,
   pendingSave: false,
   saveTimer: null,
+  viewMode: 'spine', // 'spine' 只看主线 / 'all' 全部
 };
 
 const $ = (id) => document.getElementById(id);
@@ -116,6 +117,20 @@ function kindOf(n) { return KIND[n.kind] || KIND.other; }
 /* ---------------- 布局：从左往右 ---------------- */
 
 function computeLayout(map) {
+  // 主线视图：主线是一条序列，不走树布局，从上往下一列排开
+  const spineList = Array.isArray(map.mainline) ? map.mainline : [];
+  if (S.viewMode === 'spine' && spineList.length) {
+    const ids = new Set(map.nodes.map((n) => n.id));
+    const pos = new Map();
+    let i = 0;
+    for (const id of spineList) {
+      if (!ids.has(id)) continue;
+      pos.set(id, { x: 0, y: i * (NODE_H + 46) });
+      i += 1;
+    }
+    return pos;
+  }
+
   const mapById = new Map(map.nodes.map((n) => [n.id, n]));
   const kids = new Map();
   const roots = [];
@@ -184,8 +199,16 @@ function render() {
   S.pos = computeLayout(map);
   const mapById = new Map(map.nodes.map((n) => [n.id, n]));
 
+  // 主线视图：只画主线上的框；mainline 为空就退回全部
+  const spineList = Array.isArray(map.mainline) ? map.mainline : [];
+  const spine = new Set(spineList);
+  const spineIdx = new Map(spineList.map((id, i) => [id, i + 1]));
+  const onlySpine = S.viewMode === 'spine' && spine.size > 0;
+  const visible = (id) => !onlySpine || spine.has(id);
+
   let maxX = 0, maxY = 0;
-  for (const p of S.pos.values()) {
+  for (const [id, p] of S.pos) {
+    if (!visible(id)) continue;
     maxX = Math.max(maxX, p.x + NODE_W);
     maxY = Math.max(maxY, p.y + NODE_H);
   }
@@ -207,6 +230,7 @@ function render() {
   // 树干：父 → 子，左出右进
   for (const n of map.nodes) {
     if (!n.parent || !mapById.has(n.parent)) continue;
+    if (!visible(n.id) || !visible(n.parent)) continue;
     const a = S.pos.get(n.parent), b = S.pos.get(n.id);
     if (!a || !b) continue;
     const x1 = a.x + NODE_W, y1 = a.y + NODE_H / 2;
@@ -218,8 +242,27 @@ function render() {
     }));
   }
 
+  // 主线视图：把主线连成一条向下的链
+  if (onlySpine) {
+    for (let i = 0; i < spineList.length - 1; i += 1) {
+      const a = S.pos.get(spineList[i]);
+      const b = S.pos.get(spineList[i + 1]);
+      if (!a || !b) continue;
+      const x1 = a.x + NODE_W / 2, y1 = a.y + NODE_H;
+      const x2 = b.x + NODE_W / 2, y2 = b.y;
+      svg.appendChild(svgEl('path', {
+        class: 'spine-edge',
+        d: `M${x1},${y1} L${x2},${y2}`,
+        'marker-end': 'url(#arrow-flow)',
+      }));
+    }
+  }
+
   // 关系线
   for (const e of map.edges || []) {
+    if (!visible(e.from) || !visible(e.to)) continue;
+    // 主线视图里，"次序"线跟那条链重复了，不画
+    if (onlySpine && e.type === 'flow') continue;
     const a = S.pos.get(e.from), b = S.pos.get(e.to);
     if (!a || !b) continue;
     const type = EDGE[e.type] ? e.type : 'ref';
@@ -272,14 +315,41 @@ function render() {
   // 节点
   nodesLayer.textContent = '';
   for (const n of map.nodes) {
+    if (!visible(n.id)) continue;
     const p = S.pos.get(n.id);
     if (!p) continue;
-    nodesLayer.appendChild(buildNodeEl(n, p));
+    const el = buildNodeEl(n, p);
+    decorateNodeEl(el, n, spine, spineIdx);
+    nodesLayer.appendChild(el);
   }
 
   applyDim();
   updateMeta();
   applyLod();
+}
+
+/** 主线序号、支线角标。buildNodeEl 之后统一加，patchNode 也走这里 */
+function decorateNodeEl(el, n, spine, spineIdx) {
+  if (!spine || !spine.has(n.id)) return;
+  el.classList.add('on-spine');
+
+  const idx = document.createElement('span');
+  idx.className = 'spine-idx';
+  idx.textContent = spineIdx.get(n.id);
+  el.appendChild(idx);
+
+  const branches = kidsOf(n.id).filter((k) => !spine.has(k.id)).length;
+  if (branches > 0) {
+    const b = document.createElement('span');
+    b.className = 'branch-count';
+    b.textContent = `＋${branches} 支线`;
+    b.title = '切到「全部」看这些支线';
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setViewMode('all');
+    });
+    el.appendChild(b);
+  }
 }
 
 function buildNodeEl(n, p) {
@@ -342,6 +412,8 @@ function patchNode(id) {
   const p = S.pos.get(id);
   const fresh = buildNodeEl(n, p || { x: 0, y: 0 });
   fresh.style.transform = el.style.transform;
+  const spineList = Array.isArray(S.map?.mainline) ? S.map.mainline : [];
+  decorateNodeEl(fresh, n, new Set(spineList), new Map(spineList.map((x, i) => [x, i + 1])));
   el.replaceWith(fresh);
   applyDim();
   updateMeta();
@@ -353,11 +425,23 @@ function updateMeta() {
   const counts = {};
   for (const n of map.nodes) counts[n.status] = (counts[n.status] || 0) + 1;
   const parts = [`${map.nodes.length} 个框`, `${(map.edges || []).length} 条线`];
+  const spineLen = Array.isArray(map.mainline) ? map.mainline.length : 0;
+  if (spineLen) parts.push(`主线 ${spineLen} 步`);
   for (const [k, v] of Object.entries(counts)) {
     if (STATUS[k]) parts.push(`${STATUS[k].label} ${v}`);
   }
   $('wsTitle').textContent = map.title || S.ws;
   $('wsMeta').textContent = `${S.ws}  ·  ${parts.join('  ·  ')}`;
+}
+
+/** 主线视图和「全部」的切换 */
+function setViewMode(mode) {
+  S.viewMode = mode === 'all' ? 'all' : 'spine';
+  for (const c of $('viewChips').children) {
+    c.classList.toggle('active', c.dataset.view === S.viewMode);
+  }
+  render();
+  fitAll();
 }
 
 function applyDim() {
@@ -1073,7 +1157,9 @@ async function loadWorkspace(ws) {
     $('empty').hidden = true;
     renderRail();
     render();
-    focusReadable();
+    // 主线模式下先看全局（主线就那几步）；全部模式停在能读字的倍率
+    if (S.viewMode === 'spine' && Array.isArray(map.mainline) && map.mainline.length) fitAll();
+    else focusReadable();
     refreshPending();
   } catch (err) {
     console.error(err);
@@ -1141,6 +1227,12 @@ $('relayout').addEventListener('click', () => {
 
 $('wsSelect').addEventListener('change', (e) => {
   if (e.target.value && e.target.value !== S.ws) loadWorkspace(e.target.value);
+});
+
+$('viewChips').addEventListener('click', (e) => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  setViewMode(btn.dataset.view);
 });
 
 window.addEventListener('resize', () => { if (S.map) { render(); } });

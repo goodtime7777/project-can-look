@@ -84,18 +84,22 @@ html, body {
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; row-gap: 8px;
   gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
   background: var(--bg-2);
   z-index: 5;
 }
-.tb-left { min-width: 0; }
+.tb-left { min-width: 0; flex: 1 1 220px; }
 .tb-left h1 {
   margin: 0; font-size: 15px; font-weight: 640; letter-spacing: .2px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.tb-meta { margin-top: 2px; font-size: 11px; color: var(--text-faint); }
+.tb-meta {
+  margin-top: 2px; font-size: 11px; color: var(--text-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .tb-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
 .pending-pill {
@@ -138,6 +142,11 @@ html, body {
 .btn.small { padding: 5px 10px; font-size: 11px; }
 .btn.danger:hover { color: #ff8080; border-color: #5a2b2b; }
 
+/* 主线 / 全部 */
+.view-chips .chip[data-view="spine"].active {
+  background: #24313f; color: #cfe0f5;
+}
+
 /* 窄屏（塞进侧边栏时）用的工作区下拉 */
 .ws-select {
   display: none;
@@ -165,6 +174,7 @@ html, body {
 .nodes { position: absolute; top: 0; left: 0; }
 
 .tree-edge { fill: none; stroke: #2b3746; stroke-width: 1.6; }
+.spine-edge { fill: none; stroke: #3f5871; stroke-width: 2; }
 .rel-edge { fill: none; stroke-width: 1.8; opacity: .95; }
 .rel-edge.merge { stroke: #c084fc; stroke-width: 2.4; }
 .rel-edge.ref { stroke: #64748b; stroke-dasharray: 7 6; }
@@ -250,6 +260,29 @@ html, body {
 .k-ui      { --accent: var(--k-ui); }
 .k-fix     { --accent: var(--k-fix); }
 .k-other   { --accent: var(--k-other); }
+
+/* 主线：粗一点、亮一点，带序号 */
+.node.on-spine {
+  border-color: #3f5871;
+  box-shadow: 0 0 0 1px rgba(77,127,181,.25), 0 8px 22px rgba(0,0,0,.45);
+}
+.node.on-spine .node-title { color: #f2f7fd; }
+
+.spine-idx {
+  position: absolute; left: -9px; top: -9px;
+  min-width: 20px; height: 20px; padding: 0 5px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; background: #2f4a66; border: 1px solid #47698b;
+  color: #dbe9f8; font-size: 11px; font-weight: 600; line-height: 1;
+}
+
+.branch-count {
+  position: absolute; right: 8px; bottom: -11px;
+  padding: 1px 7px; border-radius: 9px;
+  background: #1b2530; border: 1px solid #2f3d4d;
+  color: #8ea2b8; font-size: 10px; cursor: pointer; white-space: nowrap;
+}
+.branch-count:hover { color: #cfe0f5; border-color: #47698b; }
 
 /* 画布角标 */
 .legend {
